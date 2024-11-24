@@ -14,11 +14,12 @@ List of recent articles: |pubs|
 model = "llama3.2"
 researchers = []
 biographies = []
+errors = {}
 initial_time = time.time()
 print(f"Starting time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(initial_time))}")
 
 bq = BigQueryAPI(dataset)
-batchSize = 100
+batchSize = 1000
 
 biographies = bq.get_empty_researchers(researchersTable, batchSize)
 while len(biographies) > 0:
@@ -28,6 +29,8 @@ while len(biographies) > 0:
         if isinstance(bio, str):
             print(bio)
             exit()
+        if bio["res_id"] in errors and errors[bio["res_id"]] >= 3:
+            print(f"Skipping {bio['res_id']} {bio['res_name']} due to too many errors")
         print(f"Generating summaries for: {bio['res_id']} {bio['res_name']}")
         p = prompt.replace("|name|", bio["res_name"])
         p = p.replace("|pubs|", bio["res_top20_recent_titles"])
@@ -38,6 +41,10 @@ while len(biographies) > 0:
             }
         ])
         if len(response['message']['content']) < 150:
+            if bio["res_id"] in errors:
+                errors[bio["res_id"]] += 1
+            else:
+                errors[bio["res_id"]] = 1
             print(f"Discarding response for {bio['res_id']} {bio['res_name']}")
             continue
         data = {
