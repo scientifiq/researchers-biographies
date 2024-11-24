@@ -37,6 +37,9 @@ while len(biographies) > 0:
                 'content': p
             }
         ])
+        if len(response['message']['content']) < 150:
+            print(f"Discarding response for {bio['res_id']} {bio['res_name']}")
+            continue
         data = {
             "res_id": bio["res_id"],
             "res_bio": response['message']['content']
