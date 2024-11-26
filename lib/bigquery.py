@@ -14,10 +14,16 @@ class BigQueryAPI:
         self.client = bigquery.Client(credentials=credentials, project=credentials.project_id)
         self.dataset_id = dataset_id
 
-    def get_empty_researchers(self, table, limit):
+    def get_empty_researchers(self, table, limit, greater_than="", less_or_equal_than=""):
         external_full_table_id = f"{self.client.project}.{self.dataset_id}.{table}"
 
-        query = f"SELECT * FROM `{external_full_table_id}` WHERE res_bio IS NULL ORDER BY res_total_pubs DESC LIMIT {limit}"
+        extra = ""
+        if greater_than:
+            extra += f" AND res_id > '{greater_than}'"
+        if less_or_equal_than:
+            extra += f" AND res_id <= '{less_or_equal_than}'"
+
+        query = f"SELECT * FROM `{external_full_table_id}` WHERE res_bio IS NULL {extra} ORDER BY res_total_pubs DESC LIMIT {limit}"
         query_job = self.client.query(query)
         results = query_job.result()
 
@@ -27,12 +33,13 @@ class BigQueryAPI:
 
         return data
     
-    def update_researchers_in_bulk(self, target_table, final_table, updates):
+    def update_researchers_in_bulk(self, target_table, final_table, updates, greater_than="", less_or_equal_than=""):
         print(f"Starting bulk update for {len(updates)} researchers")
+
         target_table_id = f"{self.client.project}.{self.dataset_id}.{target_table}"
         final_table_id = f"{self.client.project}.{self.dataset_id}.{final_table}"
+        temp_table_id = f"{self.client.project}.{self.dataset_id}.temp_biographies_updates_{greater_than}_{less_or_equal_than}"
 
-        temp_table_id = f"{self.client.project}.{self.dataset_id}.temp_biographies_updates"
         self.create_temp_table(temp_table_id)
         self.load_updates_into_temp_table(temp_table_id, updates)
         self.merge_updates(target_table_id, temp_table_id)

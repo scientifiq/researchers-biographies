@@ -2,6 +2,7 @@ import ollama
 from lib.bigquery import BigQueryAPI
 import time
 import json
+import sys
 
 dataset = "api_test"
 researchersTable = "researchers"
@@ -19,9 +20,17 @@ initial_time = time.time()
 print(f"Starting time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(initial_time))}")
 
 bq = BigQueryAPI(dataset)
-batchSize = 1000
+batchSize = 10
 
-biographies = bq.get_empty_researchers(researchersTable, batchSize)
+greater_than = ""
+if len(sys.argv) > 1:
+    greater_than = sys.argv[1]
+
+less_or_equal_than = ""
+if len(sys.argv) > 2:
+    less_or_equal_than = sys.argv[2]
+
+biographies = bq.get_empty_researchers(researchersTable, batchSize, greater_than, less_or_equal_than)
 while len(biographies) > 0:
     updates = []
 
@@ -56,8 +65,8 @@ while len(biographies) > 0:
         updates.append(data)
 
     print(len(updates))
-    bq.update_researchers_in_bulk(biographiesTable, researchersTable, updates)
-    biographies = bq.get_empty_researchers(researchersTable, batchSize)
+    bq.update_researchers_in_bulk(biographiesTable, researchersTable, updates, greater_than, less_or_equal_than)
+    biographies = bq.get_empty_researchers(researchersTable, batchSize, greater_than, less_or_equal_than)
 
 final_time = time.time()
 print(f"Time elapsed: {final_time - initial_time} seconds")
