@@ -20,7 +20,7 @@ initial_time = time.time()
 print(f"Starting time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(initial_time))}")
 
 bq = BigQueryAPI(dataset)
-batchSize = 10
+batchSize = 1000
 
 greater_than = ""
 if len(sys.argv) > 1:
